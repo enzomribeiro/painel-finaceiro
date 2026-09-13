@@ -220,6 +220,7 @@
   .view-head .desc{color:var(--text-muted);font-size:14px;}
 
   .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .kpi-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px;}
   .kpi{
     background:#fff;
     border:1px solid var(--line);
@@ -240,6 +241,7 @@
   .chart-card canvas{max-height:240px;}
 
   .month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+  .month-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
   .col-card{
     background:#fff;border:1px solid var(--line);border-radius:var(--radius);
     display:flex;flex-direction:column;overflow:hidden;
@@ -285,7 +287,7 @@
   .col-list .empty{color:var(--text-muted);font-style:italic;padding:14px 16px;font-size:12.5px;}
   .add-row{
     padding:10px 12px;
-    display:flex;gap:6px;
+    display:flex;gap:6px;flex-wrap:wrap;
     border-top:1px solid var(--line);
     background:var(--paper-2);
   }
@@ -366,17 +368,72 @@
   .veredito-card p{margin:0;font-size:13px;color:var(--text-muted-dark);line-height:1.5;}
   .disclaimer{font-size:11.5px;color:var(--text-muted);font-style:italic;}
 
+  .mobile-topbar{display:none;}
+
   @media (max-width: 900px){
-    #app{flex-direction:column;}
-    .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;padding:14px;}
-    .brand{border:none;padding:0 10px 0 0;margin:0;}
-    .year-picker{padding:0;margin:0 10px 0 0;width:auto;}
-    .nav-group{display:flex;flex-wrap:wrap;padding:0;}
-    .sidebar-foot{margin:0 0 0 auto;padding:0;border:none;}
-    main{padding:22px 18px 50px;}
+    .mobile-topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      background:var(--ink-2);color:var(--paper);padding:12px 16px;
+      position:sticky;top:0;z-index:40;
+      border-bottom:1px solid var(--line-dark);
+    }
+    .mobile-topbar .hamburger{
+      background:none;border:1px solid var(--line-dark);color:var(--paper);
+      width:34px;height:34px;border-radius:2px;font-size:16px;line-height:1;
+    }
+    .mobile-topbar-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;}
+    #app{position:relative;display:block !important;}
+    .sidebar{
+      position:fixed;top:0;left:0;bottom:0;z-index:50;
+      width:80vw;max-width:300px;
+      flex-direction:column;flex-wrap:nowrap;
+      transform:translateX(-105%);
+      transition:transform .25s ease;
+      overflow-y:auto;
+      box-shadow:4px 0 24px rgba(0,0,0,0.35);
+      padding:22px 0;
+    }
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-overlay{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:45;
+    }
+    .sidebar-overlay.show{display:block;}
+    .brand{padding:0 20px 20px;}
+    .year-picker{padding:0 20px;}
+    .nav-group{display:block;padding:0 12px;}
+    .sidebar-foot{margin-top:24px;padding:14px 20px 0;}
+    main{padding:20px 16px 50px;}
     .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .kpi-row-3{grid-template-columns:repeat(2,1fr);}
     .charts-row{grid-template-columns:1fr;}
     .month-grid{grid-template-columns:1fr;}
+    .month-grid-2col{grid-template-columns:1fr;}
+    .pilares-grid{grid-template-columns:1fr;}
+    .acoes-search{flex-direction:column;max-width:100%;}
+    .acoes-hint details > div{flex-wrap:wrap;}
+    .acao-head{flex-direction:column;align-items:flex-start;gap:8px;}
+    .balance-card{flex-direction:column;align-items:flex-start;gap:6px;}
+    .veredito-card .score{font-size:20px;}
+    table.metas{font-size:12.5px;}
+    table.metas th, table.metas td{padding:8px 8px;}
+    table.metas input{width:70px;}
+    .setup-card{padding:28px 22px;}
+    .chart-card canvas{max-height:200px;}
+  }
+
+  @media (max-width: 520px){
+    main{padding:16px 12px 46px;}
+    .view-head h1{font-size:20px;}
+    .kpi-row, .kpi-row-3{grid-template-columns:1fr 1fr;}
+    .kpi .value{font-size:17px;}
+    .add-row input.date{width:auto;flex:1 1 100px;}
+    .add-row select.cat{max-width:none;flex:1 1 100px;}
+    .add-row input.val{width:auto;flex:1 1 70px;}
+    .add-row input.desc{flex:1 1 100%;order:1;}
+    .col-list li{flex-wrap:wrap;}
+    .col-list li .val{margin-left:auto;}
+    .acoes-search input{width:100%;}
+    .sidebar{width:88vw;}
   }
 </style>
 </head>
@@ -408,7 +465,13 @@
 </div>
 
 <div id="app" style="display:none;">
-  <aside class="sidebar">
+  <div class="mobile-topbar" id="mobile-topbar">
+    <button class="hamburger" id="btn-menu" aria-label="Abrir menu">☰</button>
+    <span class="mobile-topbar-title" id="mobile-topbar-title">Livro-Caixa</span>
+    <span style="width:34px;"></span>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="name" id="brand-name">Livro-Caixa</div>
       <div class="sub">Controle financeiro pessoal</div>
@@ -426,7 +489,7 @@
     </div>
     <div class="sidebar-foot">
       <button id="btn-disconnect">Desconectar banco</button>
-      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v8</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v10</div>
     </div>
   </aside>
   <main id="main-content"></main>
@@ -634,9 +697,20 @@ function setupMonthNav(){
 
 function setupNavHandlers(){
   document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-    btn.addEventListener('click', () => renderView(btn.dataset.view));
+    btn.addEventListener('click', () => { renderView(btn.dataset.view); closeSidebar(); });
   });
 }
+
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+document.getElementById('btn-menu').addEventListener('click', openSidebar);
+document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
 
 function setActiveNav(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -892,7 +966,7 @@ async function renderMes(main, mesNum){
         ${coluna('despesa_fixa','Despesas fixas','fixa', grupos.despesa_fixa)}
         ${coluna('despesa_variavel','Despesas variáveis','variavel', grupos.despesa_variavel)}
       </div>
-      <div class="month-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="month-grid month-grid-2col">
         ${coluna('investimento','Investimentos e poupança','invest', grupos.investimento)}
         <div class="chart-card">
           <h3>Gastos por categoria</h3>
@@ -1133,12 +1207,14 @@ async function renderAcoes(main){
         <div class="score">${fmt(totalPosses)} nas posses reais &nbsp;·&nbsp; ${fmt(totalAportado)} aportado no painel</div>
         <p>Diferença: ${fmt(diferenca)} ${diferenca>=0 ? '(pode ser rendimento acumulado — ou uma posse que faltou cadastrar)' : '(pode ser prejuízo de mercado — ou um aporte lançado a mais/errado em algum mês)'}.</p>
       </div>
-      <table class="metas">
-        <thead><tr><th>Mês</th><th>Investido registrado</th></tr></thead>
-        <tbody>
-          ${mesesOrdenados.map(m => `<tr><td>${m}</td><td>${fmt(porMes[m])}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum investimento registrado ainda.</td></tr>'}
-        </tbody>
-      </table>
+      <div style="overflow-x:auto;">
+        <table class="metas">
+          <thead><tr><th>Mês</th><th>Investido registrado</th></tr></thead>
+          <tbody>
+            ${mesesOrdenados.map(m => `<tr><td>${m}</td><td>${fmt(porMes[m])}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum investimento registrado ainda.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
@@ -1261,7 +1337,7 @@ async function renderMetas(main){
       <h1>Metas &amp; economia</h1>
       <div class="desc">Planeje quanto pretende guardar por mês e acompanhe o quanto já foi investido.</div>
     </div>
-    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+    <div class="kpi-row-3">
       <div class="kpi invest"><div class="label">Investido em ${currentYear}</div><div class="value">${fmt(totalInvestido)}</div></div>
       <div class="kpi"><div class="label">Objetivo geral</div><div class="value">
         <input id="objetivo-input" type="number" step="0.01" value="${cfg.objetivo_total||0}" style="border:none;background:transparent;width:100%;font:inherit;font-variant-numeric:tabular-nums;">
@@ -1271,23 +1347,25 @@ async function renderMetas(main){
     <div class="progress-wrap" style="margin-bottom:26px;">
       <div class="progress-bar" style="width:${cfg.objetivo_total ? Math.min(100, totalInvestido/cfg.objetivo_total*100) : 0}%"></div>
     </div>
-    <table class="metas">
-      <thead><tr><th>Mês</th><th>Valor previsto</th><th>Investido</th><th>Diferença</th></tr></thead>
-      <tbody>
-        ${MESES.map(m => {
-          const mesKey = `${currentYear}-${m.n}`;
-          const meta = cacheMetas[mesKey] || {valor_previsto:0};
-          const inv = investPorMes[m.n];
-          const dif = inv - (Number(meta.valor_previsto)||0);
-          return `<tr data-mes="${mesKey}">
-            <td>${m.label}</td>
-            <td><input class="previsto" type="number" step="0.01" value="${meta.valor_previsto||0}"></td>
-            <td>${fmt(inv)}</td>
-            <td style="color:${dif>=0?'var(--ganho)':'var(--fixa)'}">${fmt(dif)}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="metas">
+        <thead><tr><th>Mês</th><th>Valor previsto</th><th>Investido</th><th>Diferença</th></tr></thead>
+        <tbody>
+          ${MESES.map(m => {
+            const mesKey = `${currentYear}-${m.n}`;
+            const meta = cacheMetas[mesKey] || {valor_previsto:0};
+            const inv = investPorMes[m.n];
+            const dif = inv - (Number(meta.valor_previsto)||0);
+            return `<tr data-mes="${mesKey}">
+              <td>${m.label}</td>
+              <td><input class="previsto" type="number" step="0.01" value="${meta.valor_previsto||0}"></td>
+              <td>${fmt(inv)}</td>
+              <td style="color:${dif>=0?'var(--ganho)':'var(--fixa)'}">${fmt(dif)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   document.getElementById('objetivo-input').addEventListener('change', async (e) => {
