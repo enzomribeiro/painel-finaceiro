@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Livro-Caixa · Controle Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0F1B14;
+    --ink-2:#17281F;
+    --paper:#F2ECD9;
+    --paper-2:#E9E1C8;
+    --line: rgba(15,27,20,0.14);
+    --line-dark: rgba(242,236,217,0.14);
+    --gold:#C9962B;
+    --gold-2:#E4B75C;
+    --ganho:#5E9271;
+    --fixa:#A34D33;
+    --variavel:#C97D3D;
+    --invest:#3E7C7B;
+    --text-muted: rgba(15,27,20,0.58);
+    --text-muted-dark: rgba(242,236,217,0.62);
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces', serif;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+
+  /* ---------- SETUP SCREEN ---------- */
+  #setup-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px;
+  }
+  .setup-card{
+    max-width:560px;
+    width:100%;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:var(--radius);
+    padding:40px 36px;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+  .setup-card .kicker{
+    color:var(--gold);
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.02em;
+    margin-bottom:6px;
+  }
+  .setup-card h1{
+    font-size:30px;
+    font-weight:600;
+    margin:0 0 10px;
+    line-height:1.15;
+  }
+  .setup-card p{
+    color:var(--text-muted);
+    line-height:1.55;
+    font-size:14.5px;
+    margin:0 0 22px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;color:var(--ink);}
+  .field input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid rgba(15,27,20,0.25);
+    border-radius:2px;
+    background:#fff;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .btn-primary{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:11px 20px;
+    border-radius:2px;
+    font-size:14px;
+    font-weight:600;
+    width:100%;
+    margin-top:6px;
+  }
+  .btn-primary:hover{background:var(--ink-2);}
+  .sql-toggle{
+    margin-top:22px;
+    border-top:1px solid rgba(0,0,0,0.1);
+    padding-top:18px;
+  }
+  .sql-toggle summary{
+    cursor:pointer;
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--ink);
+  }
+  .sql-box{
+    background:var(--ink);
+    color:#D9F0DD;
+    font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:11.5px;
+    line-height:1.6;
+    padding:16px;
+    border-radius:2px;
+    margin-top:12px;
+    white-space:pre-wrap;
+    max-height:260px;
+    overflow:auto;
+  }
+  .copy-btn{
+    margin-top:8px;
+    background:transparent;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    padding:6px 12px;
+    border-radius:2px;
+    font-size:12.5px;
+    font-weight:600;
+  }
+  .setup-error{
+    background:#F6DDD5;
+    color:#7A2E1B;
+    padding:10px 12px;
+    border-radius:2px;
+    font-size:13px;
+    margin-bottom:14px;
+    display:none;
+  }
+
+  /* ---------- APP LAYOUT ---------- */
+  #app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:220px;
+    flex-shrink:0;
+    background:var(--ink-2);
+    border-right:1px solid var(--line-dark);
+    padding:26px 0;
+    display:flex;
+    flex-direction:column;
+  }
+  .brand{
+    padding:0 20px 20px;
+    border-bottom:1px solid var(--line-dark);
+    margin-bottom:16px;
+  }
+  .brand .name{font-size:19px;font-weight:600;letter-spacing:0.01em;}
+  .brand .sub{font-size:11.5px;color:var(--text-muted-dark);margin-top:2px;}
+  .year-picker{
+    padding:0 20px;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .year-picker select{
+    background:transparent;
+    color:var(--paper);
+    border:1px solid var(--line-dark);
+    border-radius:2px;
+    padding:5px 8px;
+    font-size:13px;
+    width:100%;
+  }
+  .nav-group{padding:0 12px;}
+  .nav-label{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-muted-dark);
+    padding:6px 8px 6px;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--paper);
+    text-align:left;
+    padding:8px 8px;
+    border-radius:2px;
+    font-size:13.5px;
+    margin-bottom:1px;
+  }
+  .nav-item:hover{background:rgba(242,236,217,0.06);}
+  .nav-item.active{background:var(--gold);color:var(--ink);font-weight:600;}
+  .nav-item .num{font-variant-numeric:tabular-nums;font-size:11px;opacity:0.6;}
+  .nav-item.active .num{opacity:0.7;}
+  .sidebar-foot{margin-top:auto;padding:14px 20px 0;border-top:1px solid var(--line-dark);}
+  .sidebar-foot button{
+    background:none;border:none;color:var(--text-muted-dark);font-size:12px;padding:10px 0 0;
+  }
+  .sidebar-foot button:hover{color:var(--paper);}
+
+  main{
+    flex:1;
+    background:var(--paper);
+    color:var(--ink);
+    padding:34px 40px 60px;
+    overflow-y:auto;
+  }
+  .view-head{margin-bottom:26px;}
+  .view-head h1{font-size:28px;font-weight:600;margin:0 0 4px;}
+  .view-head .desc{color:var(--text-muted);font-size:14px;}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .kpi{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .kpi .label{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+  .kpi .value{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .kpi.ganho .value{color:var(--ganho);}
+  .kpi.despesa .value{color:var(--fixa);}
+  .kpi.invest .value{color:var(--invest);}
+
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-bottom:30px;}
+  .chart-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;
+  }
+  .chart-card h3{margin:0 0 14px;font-size:15px;font-weight:600;}
+  .chart-card canvas{max-height:240px;}
+
+  .month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+  .col-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .col-head{
+    padding:14px 16px 12px;
+    border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .col-head h3{margin:0;font-size:14px;font-weight:600;}
+  .col-head .tot{font-size:14px;font-variant-numeric:tabular-nums;font-weight:600;}
+  .col-card.ganho .col-head .tot{color:var(--ganho);}
+  .col-card.fixa .col-head .tot{color:var(--fixa);}
+  .col-card.variavel .col-head .tot{color:var(--variavel);}
+  .col-card.invest .col-head .tot{color:var(--invest);}
+  .col-list{list-style:none;margin:0;padding:0;max-height:260px;overflow-y:auto;}
+  .col-list li{
+    display:flex;justify-content:space-between;gap:8px;
+    padding:9px 16px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .col-list li .desc{flex:1;min-width:0;}
+  .col-list li .desc .d{color:var(--text-muted);font-size:11px;}
+  .col-list li .val{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .col-list li .del{
+    background:none;border:none;color:var(--text-muted);font-size:15px;line-height:1;padding:0 0 0 6px;
+  }
+  .col-list li .del:hover{color:var(--fixa);}
+  .col-list li .edit{
+    background:none;border:none;color:var(--text-muted);font-size:12px;line-height:1;padding:0 0 0 8px;
+  }
+  .col-list li .edit:hover{color:var(--ink);}
+  .edit-row{display:flex;flex-wrap:wrap;gap:4px;width:100%;padding:6px 0;align-items:center;}
+  .edit-row input, .edit-row select{
+    border:1px solid rgba(15,27,20,0.25);border-radius:2px;padding:5px 6px;font-size:12px;background:#fff;
+  }
+  .edit-row .e-date{width:82px;}
+  .edit-row .e-desc{flex:1;min-width:80px;}
+  .edit-row .e-val{width:70px;}
+  .edit-row button{border:none;border-radius:2px;font-size:14px;padding:4px 8px;background:var(--ink);color:var(--paper);}
+  .edit-row .e-cancel{background:transparent;color:var(--text-muted);}
+  .col-list .empty{color:var(--text-muted);font-style:italic;padding:14px 16px;font-size:12.5px;}
+  .add-row{
+    padding:10px 12px;
+    display:flex;gap:6px;
+    border-top:1px solid var(--line);
+    background:var(--paper-2);
+  }
+  .add-row input{
+    border:1px solid rgba(15,27,20,0.2);
+    border-radius:2px;
+    padding:6px 8px;
+    font-size:12.5px;
+    background:#fff;
+  }
+  .add-row input.date{width:92px;}
+  .add-row input.desc{flex:1;min-width:0;}
+  .add-row select.cat{
+    border:1px solid rgba(15,27,20,0.2);border-radius:2px;padding:6px 4px;font-size:11.5px;background:#fff;max-width:90px;
+  }
+  .add-row input.val{width:70px;}
+  .add-row button{
+    background:var(--ink);color:var(--paper);border:none;border-radius:2px;
+    padding:0 12px;font-size:16px;font-weight:600;
+  }
+
+  .balance-card{
+    background:var(--ink);color:var(--paper);
+    border-radius:var(--radius);
+    padding:18px 22px;
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:24px;
+  }
+  .balance-card .label{font-size:12.5px;color:var(--text-muted-dark);}
+  .balance-card .value{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .balance-card .value.neg{color:#E38B72;}
+  .balance-card .value.pos{color:var(--gold-2);}
+
+  table.metas{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  table.metas th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;
+    color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--line);
+  }
+  table.metas td{padding:9px 14px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  table.metas tr:last-child td{border-bottom:none;}
+  table.metas input{
+    border:1px solid transparent;background:transparent;font-size:13.5px;
+    font-variant-numeric:tabular-nums;width:90px;padding:4px 6px;border-radius:2px;
+  }
+  table.metas input:hover, table.metas input:focus{border-color:rgba(15,27,20,0.25);background:#fff;outline:none;}
+  .progress-wrap{width:100%;height:6px;background:var(--paper-2);border-radius:4px;margin-top:20px;overflow:hidden;}
+  .progress-bar{height:100%;background:var(--gold);border-radius:4px;}
+
+  .toast{
+    position:fixed;bottom:22px;right:22px;background:var(--ink);color:var(--paper);
+    padding:11px 18px;border-radius:2px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.25);
+    opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  .acoes-search{display:flex;gap:8px;margin-bottom:8px;max-width:520px;}
+  .acoes-search input{flex:1;padding:10px 12px;border:1px solid rgba(15,27,20,0.25);border-radius:2px;font-size:14px;text-transform:uppercase;}
+  .acoes-search button{background:var(--ink);color:var(--paper);border:none;padding:0 18px;border-radius:2px;font-size:14px;font-weight:600;}
+  .acoes-hint{font-size:12px;color:var(--text-muted);margin-bottom:22px;}
+  .acoes-hint a{color:var(--ink);}
+  .acao-head{display:flex;justify-content:space-between;align-items:baseline;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin-bottom:20px;}
+  .acao-head .nome{font-size:20px;font-weight:600;}
+  .acao-head .setor{font-size:12.5px;color:var(--text-muted);}
+  .acao-head .preco{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .pilares-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px;}
+  .pilar-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .pilar-card .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .pilar-card h4{margin:0;font-size:14px;font-weight:600;}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.03em;}
+  .badge.bom{background:rgba(94,146,113,0.16);color:var(--ganho);}
+  .badge.neutro{background:rgba(201,150,43,0.18);color:#8A6413;}
+  .badge.atencao{background:rgba(163,77,51,0.14);color:var(--fixa);}
+  .badge.na{background:rgba(15,27,20,0.08);color:var(--text-muted);}
+  .pilar-card .metric-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text-muted);}
+  .pilar-card .metric-row b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  .veredito-card{background:var(--ink);color:var(--paper);border-radius:var(--radius);padding:18px 22px;margin-bottom:14px;}
+  .veredito-card .score{font-size:26px;font-weight:600;margin-bottom:4px;}
+  .veredito-card p{margin:0;font-size:13px;color:var(--text-muted-dark);line-height:1.5;}
+  .disclaimer{font-size:11.5px;color:var(--text-muted);font-style:italic;}
+
+  @media (max-width: 900px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;padding:14px;}
+    .brand{border:none;padding:0 10px 0 0;margin:0;}
+    .year-picker{padding:0;margin:0 10px 0 0;width:auto;}
+    .nav-group{display:flex;flex-wrap:wrap;padding:0;}
+    .sidebar-foot{margin:0 0 0 auto;padding:0;border:none;}
+    main{padding:22px 18px 50px;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .charts-row{grid-template-columns:1fr;}
+    .month-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="kicker">Livro-Caixa</div>
+    <h1>Conecte seu banco de dados</h1>
+    <p>Este painel guarda seus lançamentos no Supabase (gratuito). Cole a URL e a chave <em>anon</em> do seu projeto abaixo — elas ficam salvas só neste dispositivo.</p>
+    <div class="setup-error" id="setup-error"></div>
+    <div class="field">
+      <label>URL do projeto Supabase</label>
+      <input id="input-url" placeholder="https://xxxxxxxx.supabase.co">
+    </div>
+    <div class="field">
+      <label>Chave anon (public)</label>
+      <input id="input-key" placeholder="eyJhbGciOi...">
+    </div>
+    <button class="btn-primary" id="btn-connect">Conectar</button>
+
+    <details class="sql-toggle">
+      <summary>Ainda não criei as tabelas — mostrar SQL</summary>
+      <p style="margin:10px 0 0;">No painel do Supabase, abra <strong>SQL Editor</strong>, cole o código abaixo e clique em Run. Depois volte aqui e conecte.</p>
+      <div class="sql-box" id="sql-box"></div>
+      <button class="copy-btn" id="btn-copy-sql">Copiar SQL</button>
+    </details>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="name" id="brand-name">Livro-Caixa</div>
+      <div class="sub">Controle financeiro pessoal</div>
+    </div>
+    <div class="year-picker">
+      <select id="year-select"></select>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Painel</div>
+      <button class="nav-item" data-view="overview">Visão geral</button>
+      <button class="nav-item" data-view="acoes">Análise de ações</button>
+      <button class="nav-item" data-view="metas">Metas &amp; economia</button>
+      <div class="nav-label" style="margin-top:10px;">Meses</div>
+      <div id="month-nav"></div>
+    </div>
+    <div class="sidebar-foot">
+      <button id="btn-disconnect">Desconectar banco</button>
+    </div>
+  </aside>
+  <main id="main-content"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+const SB = {
+  url: '', key: '',
+  headers(extra){
+    return Object.assign({ apikey: this.key, Authorization: `Bearer ${this.key}`, 'Content-Type':'application/json' }, extra||{});
+  },
+  async select(table, params){
+    const qs = new URLSearchParams(params||{}).toString();
+    const res = await fetch(`${this.url}/rest/v1/${table}?${qs}`, { headers: this.headers() });
+    if(!res.ok){ throw new Error(await res.text()); }
+    return res.json();
+  },
+  async insert(table, row){
+    const res = await fetch(`${this.url}/rest/v1/${table}`, {
+      method:'POST', headers: this.headers({Prefer:'return=representation'}), body: JSON.stringify(row)
+    });
+    if(!res.ok){ throw new Error(await res.text()); }
+    return res.json();
+  },
+  async update(table, idField, idVal, patch){
+    const res = await fetch(`${this.url}/rest/v1/${table}?${idField}=eq.${idVal}`, {
+      method:'PATCH', headers: this.headers({Prefer:'return=representation'}), body: JSON.stringify(patch)
+    });
+    if(!res.ok){ throw new Error(await res.text()); }
+    return res.json();
+  },
+  async remove(table, idField, idVal){
+    const res = await fetch(`${this.url}/rest/v1/${table}?${idField}=eq.${idVal}`, {
+      method:'DELETE', headers: this.headers()
+    });
+    if(!res.ok){ throw new Error(await res.text()); }
+    return true;
+  }
+};
+
+const MESES = [
+  {n:'01',label:'Janeiro'},{n:'02',label:'Fevereiro'},{n:'03',label:'Março'},
+  {n:'04',label:'Abril'},{n:'05',label:'Maio'},{n:'06',label:'Junho'},
+  {n:'07',label:'Julho'},{n:'08',label:'Agosto'},{n:'09',label:'Setembro'},
+  {n:'10',label:'Outubro'},{n:'11',label:'Novembro'},{n:'12',label:'Dezembro'}
+];
+
+const SQL = `create extension if not exists pgcrypto;
+
+create table if not exists lancamentos (
+  id uuid primary key default gen_random_uuid(),
+  tipo text not null check (tipo in ('ganho','despesa_fixa','despesa_variavel','investimento')),
+  categoria text,
+  mes text not null,
+  dia date,
+  descricao text not null,
+  valor numeric not null default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists metas (
+  id uuid primary key default gen_random_uuid(),
+  mes text unique not null,
+  valor_previsto numeric default 0,
+  objetivo numeric default 0
+);
+
+create table if not exists config (
+  id int primary key default 1,
+  nome text default 'Meu Painel',
+  objetivo_total numeric default 0
+);
+insert into config (id) values (1) on conflict (id) do nothing;
+
+alter table lancamentos enable row level security;
+alter table metas enable row level security;
+alter table config enable row level security;
+
+create policy "acesso total lancamentos" on lancamentos for all using (true) with check (true);
+create policy "acesso total metas" on metas for all using (true) with check (true);
+create policy "acesso total config" on config for all using (true) with check (true);`;
+
+document.getElementById('sql-box').textContent = SQL;
+document.getElementById('btn-copy-sql').addEventListener('click', () => {
+  navigator.clipboard.writeText(SQL);
+  showToast('SQL copiado');
+});
+
+let connected = false;
+let currentYear = new Date().getFullYear();
+let currentView = 'overview';
+let cacheLancamentos = {}; // mes -> array
+let cacheMetas = {};
+let cfg = { nome: 'Meu Painel', objetivo_total: 0 };
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function fmt(v){
+  return (Number(v)||0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+async function init(){
+  const saved = await getStoredConfig();
+  if(saved && saved.url && saved.key){
+    await tryConnect(saved.url, saved.key, false);
+  }
+}
+
+async function getStoredConfig(){
+  try{
+    if(!window.storage) return null;
+    const r = await window.storage.get('supabase-config');
+    return r ? JSON.parse(r.value) : null;
+  }catch(e){ return null; }
+}
+
+document.getElementById('btn-connect').addEventListener('click', async () => {
+  const url = document.getElementById('input-url').value.trim();
+  const key = document.getElementById('input-key').value.trim();
+  const err = document.getElementById('setup-error');
+  err.style.display = 'none';
+  if(!url || !key){
+    err.textContent = 'Preencha a URL e a chave.';
+    err.style.display = 'block';
+    return;
+  }
+  await tryConnect(url, key, true);
+});
+
+async function tryConnect(url, key, persist){
+  try{
+    SB.url = url.replace(/\/+$/,'');
+    SB.key = key;
+    await SB.select('config', {select:'*', limit:'1'});
+    connected = true;
+    if(persist && window.storage){
+      try{ await window.storage.set('supabase-config', JSON.stringify({url:SB.url, key})); }
+      catch(e){ /* persistence is optional, ignore if unavailable */ }
+    }
+    const cfgRows = await SB.select('config', {select:'*', id:'eq.1'});
+    if(cfgRows && cfgRows[0]){ cfg = cfgRows[0]; }
+    document.getElementById('brand-name').textContent = cfg.nome || 'Livro-Caixa';
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    setupYearPicker();
+    setupMonthNav();
+    setupNavHandlers();
+    await renderView('overview');
+  }catch(e){
+    connected = false;
+    const err = document.getElementById('setup-error');
+    err.textContent = 'Não foi possível conectar. Verifique a URL, a chave e se as tabelas foram criadas (veja o SQL abaixo). Detalhe: ' + (e && e.message ? e.message : e);
+    err.style.display = 'block';
+  }
+}
+
+document.getElementById('btn-disconnect').addEventListener('click', async () => {
+  if(!confirm('Desconectar este painel do banco? Seus dados continuam salvos no Supabase.')) return;
+  if(window.storage){ try{ await window.storage.delete('supabase-config'); }catch(e){} }
+  location.reload();
+});
+
+function setupYearPicker(){
+  const sel = document.getElementById('year-select');
+  sel.innerHTML = '';
+  for(let y = currentYear - 2; y <= currentYear + 2; y++){
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if(y === currentYear) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', async () => {
+    currentYear = Number(sel.value);
+    cacheLancamentos = {};
+    await renderView(currentView);
+  });
+}
+
+function setupMonthNav(){
+  const nav = document.getElementById('month-nav');
+  nav.innerHTML = MESES.map(m =>
+    `<button class="nav-item" data-view="mes-${m.n}"><span>${m.label}</span><span class="num">${m.n}</span></button>`
+  ).join('');
+}
+
+function setupNavHandlers(){
+  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => renderView(btn.dataset.view));
+  });
+}
+
+function setActiveNav(view){
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+}
+
+async function renderView(view){
+  currentView = view;
+  setActiveNav(view);
+  const main = document.getElementById('main-content');
+  main.innerHTML = '<div style="padding:40px;color:var(--text-muted);">Carregando…</div>';
+  if(view === 'overview'){
+    await renderOverview(main);
+  }else if(view === 'metas'){
+    await renderMetas(main);
+  }else if(view === 'acoes'){
+    await renderAcoes(main);
+  }else if(view.startsWith('mes-')){
+    await renderMes(main, view.replace('mes-',''));
+  }
+}
+
+async function fetchAno(ano){
+  const prefix = `${ano}-`;
+  try{
+    return await SB.select('lancamentos', {select:'*', mes:`like.${prefix}*`});
+  }catch(e){ showToast('Erro ao buscar dados'); return []; }
+}
+
+async function renderOverview(main){
+  const dados = await fetchAno(currentYear);
+  const porMes = {};
+  MESES.forEach(m => porMes[m.n] = {ganho:0, fixa:0, variavel:0, invest:0});
+  let totGanho=0, totFixa=0, totVar=0, totInvest=0;
+  dados.forEach(d => {
+    const mesNum = d.mes.split('-')[1];
+    if(!porMes[mesNum]) return;
+    const v = Number(d.valor)||0;
+    if(d.tipo === 'ganho'){ porMes[mesNum].ganho += v; totGanho += v; }
+    if(d.tipo === 'despesa_fixa'){ porMes[mesNum].fixa += v; totFixa += v; }
+    if(d.tipo === 'despesa_variavel'){ porMes[mesNum].variavel += v; totVar += v; }
+    if(d.tipo === 'investimento'){ porMes[mesNum].invest += v; totInvest += v; }
+  });
+  const saldo = totGanho - totFixa - totVar - totInvest;
+
+  const catTotais = {};
+  dados.filter(d => d.tipo==='despesa_fixa' || d.tipo==='despesa_variavel').forEach(d => {
+    const c = d.categoria || 'Sem categoria';
+    catTotais[c] = (catTotais[c]||0) + (Number(d.valor)||0);
+  });
+  const catLabels = Object.keys(catTotais);
+  const catValores = Object.values(catTotais);
+
+  main.innerHTML = `
+    <div class="view-head">
+      <h1>Visão geral · ${currentYear}</h1>
+      <div class="desc">Resumo de ganhos, gastos e investimentos do ano.</div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi ganho"><div class="label">Total de ganhos</div><div class="value">${fmt(totGanho)}</div></div>
+      <div class="kpi despesa"><div class="label">Total de despesas</div><div class="value">${fmt(totFixa+totVar)}</div></div>
+      <div class="kpi invest"><div class="label">Total investido</div><div class="value">${fmt(totInvest)}</div></div>
+      <div class="kpi"><div class="label">Saldo do ano</div><div class="value" style="color:${saldo>=0?'var(--ganho)':'var(--fixa)'}">${fmt(saldo)}</div></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Ganhos x despesas por mês</h3>
+        <canvas id="chart-bar"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Composição de gastos no ano</h3>
+        <canvas id="chart-pie"></canvas>
+      </div>
+    </div>
+    <div class="charts-row" style="grid-template-columns:1fr;">
+      <div class="chart-card">
+        <h3>Gastos por categoria no ano</h3>
+        ${catLabels.length ? '<canvas id="chart-cat-ano" style="max-height:280px;"></canvas>' : '<div style="color:var(--text-muted);font-size:13px;">Nenhuma despesa categorizada ainda.</div>'}
+      </div>
+    </div>
+  `;
+
+  if(catLabels.length){
+    new Chart(document.getElementById('chart-cat-ano'), {
+      type:'bar',
+      data:{ labels: catLabels, datasets:[{ label:'Gasto no ano', data: catValores, backgroundColor: catLabels.map((_,i)=>CORES_CATEGORIA[i%CORES_CATEGORIA.length]) }] },
+      options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:v=>'R$'+v}}} }
+    });
+  }
+
+  new Chart(document.getElementById('chart-bar'), {
+    type:'bar',
+    data:{
+      labels: MESES.map(m=>m.label.slice(0,3)),
+      datasets:[
+        {label:'Ganhos', data:MESES.map(m=>porMes[m.n].ganho), backgroundColor:'#5E9271'},
+        {label:'Despesas', data:MESES.map(m=>porMes[m.n].fixa+porMes[m.n].variavel), backgroundColor:'#A34D33'},
+        {label:'Investido', data:MESES.map(m=>porMes[m.n].invest), backgroundColor:'#3E7C7B'}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}},
+      scales:{ y:{ticks:{callback:v=>'R$'+v}}, x:{grid:{display:false}} }
+    }
+  });
+
+  new Chart(document.getElementById('chart-pie'), {
+    type:'doughnut',
+    data:{
+      labels:['Despesas fixas','Despesas variáveis','Investimentos'],
+      datasets:[{data:[totFixa, totVar, totInvest], backgroundColor:['#A34D33','#C97D3D','#3E7C7B']}]
+    },
+    options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}} }
+  });
+}
+
+async function inserirLancamento(novo){
+  try{
+    return await SB.insert('lancamentos', novo);
+  }catch(err){
+    if(novo.categoria !== undefined && String(err.message||'').toLowerCase().includes('categoria')){
+      showToast('Categoria não salva — rode o SQL que adiciona a coluna "categoria"');
+      const semCategoria = Object.assign({}, novo); delete semCategoria.categoria;
+      return await SB.insert('lancamentos', semCategoria);
+    }
+    throw err;
+  }
+}
+
+async function atualizarLancamento(id, patch){
+  try{
+    return await SB.update('lancamentos', 'id', id, patch);
+  }catch(err){
+    if(patch.categoria !== undefined && String(err.message||'').toLowerCase().includes('categoria')){
+      showToast('Categoria não salva — rode o SQL que adiciona a coluna "categoria"');
+      const semCategoria = Object.assign({}, patch); delete semCategoria.categoria;
+      return await SB.update('lancamentos', 'id', id, semCategoria);
+    }
+    throw err;
+  }
+}
+
+const CATEGORIAS = {
+  ganho: ['Salário','Presente','Venda','Reembolso','Saldo anterior','Outros'],
+  despesa_fixa: ['Moradia','Telefonia','Parcelamento','Banco','Assinaturas','Saúde','Educação','Outros'],
+  despesa_variavel: ['Alimentação','Compras','Transporte','Lazer','Presentes','Cuidado pessoal','Saúde','Outros'],
+  investimento: ['Investimento BB','Poupança','Ações','Fundos','Outros']
+};
+const CORES_CATEGORIA = ['#A34D33','#C97D3D','#3E7C7B','#5E9271','#C9962B','#7C6FA2','#4C7BA6','#B5533C','#8A8360'];
+
+async function renderMes(main, mesNum){
+  const mesInfo = MESES.find(m => m.n === mesNum);
+  const mesKey = `${currentYear}-${mesNum}`;
+  if(!cacheLancamentos[mesKey]){
+    try{
+      cacheLancamentos[mesKey] = await SB.select('lancamentos', {select:'*', mes:`eq.${mesKey}`, order:'dia.asc'});
+    }catch(e){ cacheLancamentos[mesKey] = []; showToast('Erro ao buscar dados do mês'); }
+  }
+  let editingId = null;
+
+  function paint(){
+    const itens = cacheLancamentos[mesKey];
+    const grupos = {
+      ganho: itens.filter(i=>i.tipo==='ganho'),
+      despesa_fixa: itens.filter(i=>i.tipo==='despesa_fixa'),
+      despesa_variavel: itens.filter(i=>i.tipo==='despesa_variavel'),
+      investimento: itens.filter(i=>i.tipo==='investimento'),
+    };
+    const soma = arr => arr.reduce((s,i)=>s+(Number(i.valor)||0),0);
+    const totGanho = soma(grupos.ganho);
+    const totFixa = soma(grupos.despesa_fixa);
+    const totVar = soma(grupos.despesa_variavel);
+    const totInvest = soma(grupos.investimento);
+    const saldo = totGanho - totFixa - totVar - totInvest;
+    const disponivelVariavel = totGanho - totFixa - totInvest;
+
+    const catTotais = {};
+    [...grupos.despesa_fixa, ...grupos.despesa_variavel].forEach(i => {
+      const c = i.categoria || 'Sem categoria';
+      catTotais[c] = (catTotais[c]||0) + (Number(i.valor)||0);
+    });
+    const catLabels = Object.keys(catTotais);
+    const catValores = Object.values(catTotais);
+
+    function linhaItem(i, tipo){
+      if(i.id === editingId){
+        const opts = CATEGORIAS[tipo].map(c => `<option value="${c}" ${c===i.categoria?'selected':''}>${c}</option>`).join('');
+        return `
+        <li data-id="${i.id}">
+          <form class="edit-row" data-edit-save="${i.id}" data-tipo="${tipo}" data-mes="${mesKey}">
+            <input class="e-date" type="date" value="${i.dia||''}" required>
+            <input class="e-desc" type="text" value="${escapeHtml(i.descricao)}" required>
+            ${tipo!=='ganho' ? `<select class="e-cat"><option value="">Sem categoria</option>${opts}</select>` : ''}
+            <input class="e-val" type="number" step="0.01" value="${i.valor}" required>
+            <button type="submit" title="Salvar">✓</button>
+            <button type="button" class="e-cancel" title="Cancelar">×</button>
+          </form>
+        </li>`;
+      }
+      return `
+      <li data-id="${i.id}">
+        <div class="desc"><div>${escapeHtml(i.descricao)}</div><div class="d">${i.dia ? formatDia(i.dia) : ''}${i.categoria ? ' · '+escapeHtml(i.categoria) : ''}</div></div>
+        <div class="val">${fmt(i.valor)}</div>
+        <button class="edit" data-edit="${i.id}" title="Editar">✎</button>
+        <button class="del" data-del="${i.id}" title="Excluir">×</button>
+      </li>`;
+    }
+
+    function coluna(tipo, titulo, classe, lista){
+      const linhas = lista.length ? lista.map(i => linhaItem(i, tipo)).join('') : `<li class="empty">Nenhum lançamento ainda.</li>`;
+      const opts = tipo!=='ganho' ? CATEGORIAS[tipo].map(c => `<option value="${c}">${c}</option>`).join('') : '';
+      return `
+        <div class="col-card ${classe}">
+          <div class="col-head"><h3>${titulo}</h3><div class="tot">${fmt(soma(lista))}</div></div>
+          <ul class="col-list">${linhas}</ul>
+          <form class="add-row" data-tipo="${tipo}" data-mes="${mesKey}">
+            <input class="date" type="date" required>
+            <input class="desc" type="text" placeholder="Descrição" required>
+            ${tipo!=='ganho' ? `<select class="cat"><option value="">Categoria</option>${opts}</select>` : ''}
+            <input class="val" type="number" step="0.01" placeholder="0,00" required>
+            <button type="submit">+</button>
+          </form>
+        </div>`;
+    }
+
+    main.innerHTML = `
+      <div class="view-head">
+        <h1>${mesInfo.label} · ${currentYear}</h1>
+        <div class="desc">Lance ganhos, despesas fixas, variáveis e investimentos do mês.</div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi ganho"><div class="label">Ganhos</div><div class="value">${fmt(totGanho)}</div></div>
+        <div class="kpi despesa"><div class="label">Despesas</div><div class="value">${fmt(totFixa+totVar)}</div></div>
+        <div class="kpi invest"><div class="label">Investido</div><div class="value">${fmt(totInvest)}</div></div>
+        <div class="kpi"><div class="label">Sobra p/ gastos variáveis</div><div class="value" style="color:${disponivelVariavel>=0?'var(--ganho)':'var(--fixa)'}">${fmt(disponivelVariavel)}</div></div>
+      </div>
+      <div class="balance-card">
+        <div><div class="label">Quanto ainda vai sobrar pra gastar este mês</div></div>
+        <div class="value ${saldo>=0?'pos':'neg'}">${fmt(saldo)}</div>
+      </div>
+      <div class="month-grid">
+        ${coluna('ganho','Ganhos','ganho', grupos.ganho)}
+        ${coluna('despesa_fixa','Despesas fixas','fixa', grupos.despesa_fixa)}
+        ${coluna('despesa_variavel','Despesas variáveis','variavel', grupos.despesa_variavel)}
+      </div>
+      <div class="month-grid" style="grid-template-columns:1fr 1fr;">
+        ${coluna('investimento','Investimentos e poupança','invest', grupos.investimento)}
+        <div class="chart-card">
+          <h3>Gastos por categoria</h3>
+          ${catLabels.length ? '<canvas id="chart-cat-mes"></canvas>' : '<div style="color:var(--text-muted);font-size:13px;padding:10px 0;">Nenhuma despesa categorizada ainda.</div>'}
+        </div>
+      </div>
+    `;
+
+    if(catLabels.length){
+      new Chart(document.getElementById('chart-cat-mes'), {
+        type:'doughnut',
+        data:{ labels: catLabels, datasets:[{ data: catValores, backgroundColor: catLabels.map((_,i)=>CORES_CATEGORIA[i%CORES_CATEGORIA.length]) }] },
+        options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10, font:{size:11}}}} }
+      });
+    }
+
+    main.querySelectorAll('form.add-row').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dateInput = form.querySelector('.date');
+        const descInput = form.querySelector('.desc');
+        const catInput = form.querySelector('.cat');
+        const valInput = form.querySelector('.val');
+        const novo = {
+          tipo: form.dataset.tipo,
+          mes: form.dataset.mes,
+          dia: dateInput.value || null,
+          descricao: descInput.value.trim(),
+          categoria: catInput ? (catInput.value || null) : null,
+          valor: parseFloat(valInput.value)
+        };
+        try{
+          await inserirLancamento(novo);
+          delete cacheLancamentos[mesKey];
+          showToast('Lançamento salvo');
+          cacheLancamentos[mesKey] = await SB.select('lancamentos', {select:'*', mes:mesKey, order:'dia.asc'});
+          paint();
+        }catch(err){ showToast('Erro ao salvar: ' + (err.message||'')); }
+      });
+    });
+
+    main.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = btn.dataset.edit; paint(); });
+    });
+
+    main.querySelectorAll('.e-cancel').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = null; paint(); });
+    });
+
+    main.querySelectorAll('form.edit-row').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = form.dataset.editSave;
+        const patch = {
+          dia: form.querySelector('.e-date').value || null,
+          descricao: form.querySelector('.e-desc').value.trim(),
+          valor: parseFloat(form.querySelector('.e-val').value)
+        };
+        const catEl = form.querySelector('.e-cat');
+        if(catEl) patch.categoria = catEl.value || null;
+        try{
+          await atualizarLancamento(id, patch);
+          editingId = null;
+          cacheLancamentos[mesKey] = await SB.select('lancamentos', {select:'*', mes:mesKey, order:'dia.asc'});
+          showToast('Lançamento atualizado');
+          paint();
+        }catch(err){ showToast('Erro ao salvar edição: ' + (err.message||'')); }
+      });
+    });
+
+    main.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.del;
+        try{
+          await SB.remove('lancamentos', 'id', id);
+          cacheLancamentos[mesKey] = cacheLancamentos[mesKey].filter(i => i.id !== id);
+          showToast('Lançamento removido');
+          paint();
+        }catch(err){ showToast('Erro ao excluir'); }
+      });
+    });
+  }
+
+  paint();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDia(d){
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}`;
+}
+
+async function getBrapiToken(){
+  try{
+    if(!window.storage) return '';
+    const r = await window.storage.get('brapi-token');
+    return r ? r.value : '';
+  }catch(e){ return ''; }
+}
+
+function classificar(valor, bomSe, atencaoSe, formatador){
+  // bomSe/atencaoSe são funções (v)=>bool
+  if(valor === null || valor === undefined || isNaN(valor)) return {badge:'na', texto:'Sem dado'};
+  if(bomSe(valor)) return {badge:'bom', texto:'Favorável'};
+  if(atencaoSe(valor)) return {badge:'atencao', texto:'Atenção'};
+  return {badge:'neutro', texto:'Neutro'};
+}
+
+async function renderAcoes(main){
+  const token = await getBrapiToken();
+  main.innerHTML = `
+    <div class="view-head">
+      <h1>Análise de ações</h1>
+      <div class="desc">Digite um ticker da B3 (ex: PETR4, VALE3, ITUB4) para uma leitura rápida com base em 4 pilares: preço, rentabilidade, saúde financeira e crescimento.</div>
+    </div>
+    <div class="acoes-search">
+      <input id="ticker-input" type="text" placeholder="Ex: PETR4" maxlength="8">
+      <button id="btn-analisar">Analisar</button>
+    </div>
+    <div class="acoes-hint">
+      Dados públicos via <a href="https://brapi.dev" target="_blank">brapi.dev</a>. Sem token só funcionam PETR4, VALE3, MGLU3 e ITUB4.
+      <details style="margin-top:6px;">
+        <summary style="cursor:pointer;">Tenho um token grátis da brapi.dev</summary>
+        <div style="display:flex;gap:6px;margin-top:8px;max-width:420px;">
+          <input id="brapi-token-input" type="text" placeholder="Cole seu token aqui" value="${token}" style="flex:1;padding:7px 9px;border:1px solid rgba(15,27,20,0.25);border-radius:2px;font-size:12.5px;">
+          <button id="btn-save-token" style="background:var(--ink);color:var(--paper);border:none;padding:0 12px;border-radius:2px;font-size:12.5px;">Salvar</button>
+        </div>
+        <div style="margin-top:4px;font-size:11.5px;">Crie o seu de graça em brapi.dev/dashboard para analisar qualquer ação da bolsa.</div>
+      </details>
+    </div>
+    <div id="acao-resultado"></div>
+  `;
+
+  document.getElementById('btn-save-token').addEventListener('click', async () => {
+    const val = document.getElementById('brapi-token-input').value.trim();
+    if(window.storage){ try{ await window.storage.set('brapi-token', val); showToast('Token salvo'); }catch(e){} }
+  });
+
+  async function analisar(){
+    const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+    if(!ticker) return;
+    const box = document.getElementById('acao-resultado');
+    box.innerHTML = '<div style="padding:20px;color:var(--text-muted);">Buscando dados de ' + ticker + '…</div>';
+    const tk = await getBrapiToken();
+    const modules = 'financialData,defaultKeyStatistics,summaryProfile';
+    const url = `https://brapi.dev/api/quote/${ticker}?modules=${modules}&fundamental=true${tk?`&token=${encodeURIComponent(tk)}`:''}`;
+    try{
+      const res = await fetch(url);
+      const data = await res.json();
+      if(!res.ok || data.error || !data.results || !data.results[0]){
+        box.innerHTML = `<div style="padding:20px;color:var(--fixa);">Não achei dados para "${ticker}". ${data.message ? escapeHtml(data.message) : 'Verifique o ticker ou se um token válido é necessário.'}</div>`;
+        return;
+      }
+      renderResultado(box, data.results[0], ticker);
+    }catch(e){
+      box.innerHTML = `<div style="padding:20px;color:var(--fixa);">Erro ao buscar dados. Confira sua conexão ou o token.</div>`;
+    }
+  }
+
+  function renderResultado(box, r, ticker){
+    const fd = r.financialData || {};
+    const ks = r.defaultKeyStatistics || {};
+    const prof = r.summaryProfile || {};
+    const preco = r.regularMarketPrice;
+
+    // Pilar 1 — Preço (Valuation)
+    const pl = r.priceEarnings ?? ks.trailingPE ?? ((ks.trailingEps && r.regularMarketPrice) ? (r.regularMarketPrice/ks.trailingEps) : null);
+    const pvp = ks.priceToBook ?? null;
+    const c1 = classificar(pl, v=>v>0 && v<15, v=>v<=0 || v>25);
+
+    // Pilar 2 — Rentabilidade
+    const roe = fd.returnOnEquity ? fd.returnOnEquity*100 : null;
+    const margem = fd.profitMargins ? fd.profitMargins*100 : null;
+    const c2 = classificar(roe, v=>v>=15, v=>v<8);
+
+    // Pilar 3 — Saúde financeira
+    const dte = fd.debtToEquity ?? null;
+    const liquidez = fd.currentRatio ?? null;
+    const c3 = classificar(dte, v=>v>=0 && v<100, v=>v>200);
+
+    // Pilar 4 — Crescimento
+    const crescReceita = fd.revenueGrowth ? fd.revenueGrowth*100 : null;
+    const crescLucro = fd.earningsGrowth ? fd.earningsGrowth*100 : null;
+    const c4 = classificar(crescReceita, v=>v>5, v=>v<0);
+
+    const pilares = [c1,c2,c3,c4];
+    const bons = pilares.filter(p=>p.badge==='bom').length;
+    const disponiveis = pilares.filter(p=>p.badge!=='na').length;
+
+    box.innerHTML = `
+      <div class="acao-head">
+        <div>
+          <div class="nome">${escapeHtml(r.shortName || ticker)} <span style="color:var(--text-muted);font-weight:400;font-size:14px;">${ticker}</span></div>
+          <div class="setor">${escapeHtml(prof.sector || '')}${prof.sector && prof.industry ? ' · ' : ''}${escapeHtml(prof.industry || '')}</div>
+        </div>
+        <div class="preco">${preco != null ? fmt(preco) : '—'}</div>
+      </div>
+
+      <div class="veredito-card">
+        <div class="score">${bons} de ${disponiveis || 4} pilares favoráveis</div>
+        <p>Leitura automática e simplificada — não é recomendação de compra. Sempre cruze com sua própria pesquisa e, se puder, com um profissional certificado.</p>
+      </div>
+
+      <div class="pilares-grid">
+        <div class="pilar-card">
+          <div class="ph"><h4>1 · Preço (Valuation)</h4><span class="badge ${c1.badge}">${c1.texto}</span></div>
+          <div class="metric-row"><span>P/L (preço/lucro)</span><b>${pl!=null?pl.toFixed(1):'—'}</b></div>
+          <div class="metric-row"><span>P/VP (preço/valor patrimonial)</span><b>${pvp!=null?pvp.toFixed(2):'—'}</b></div>
+        </div>
+        <div class="pilar-card">
+          <div class="ph"><h4>2 · Rentabilidade</h4><span class="badge ${c2.badge}">${c2.texto}</span></div>
+          <div class="metric-row"><span>ROE (retorno s/ patrimônio)</span><b>${roe!=null?roe.toFixed(1)+'%':'—'}</b></div>
+          <div class="metric-row"><span>Margem líquida</span><b>${margem!=null?margem.toFixed(1)+'%':'—'}</b></div>
+        </div>
+        <div class="pilar-card">
+          <div class="ph"><h4>3 · Saúde financeira</h4><span class="badge ${c3.badge}">${c3.texto}</span></div>
+          <div class="metric-row"><span>Dívida/Patrimônio</span><b>${dte!=null?dte.toFixed(0)+'%':'—'}</b></div>
+          <div class="metric-row"><span>Liquidez corrente</span><b>${liquidez!=null?liquidez.toFixed(2):'—'}</b></div>
+        </div>
+        <div class="pilar-card">
+          <div class="ph"><h4>4 · Crescimento</h4><span class="badge ${c4.badge}">${c4.texto}</span></div>
+          <div class="metric-row"><span>Crescimento de receita</span><b>${crescReceita!=null?crescReceita.toFixed(1)+'%':'—'}</b></div>
+          <div class="metric-row"><span>Crescimento de lucro</span><b>${crescLucro!=null?crescLucro.toFixed(1)+'%':'—'}</b></div>
+        </div>
+      </div>
+      <div class="disclaimer">Fonte: brapi.dev (dados públicos da B3). Alguns indicadores podem faltar dependendo do ticker e do plano do token.</div>
+    `;
+  }
+
+  document.getElementById('btn-analisar').addEventListener('click', analisar);
+  document.getElementById('ticker-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') analisar(); });
+}
+
+async function renderMetas(main){
+  const metasData = await SB.select('metas', {select:'*'}).catch(()=>[]);
+  const cfgRows = await SB.select('config', {select:'*', id:'eq.1'}).catch(()=>[]);
+  if(cfgRows && cfgRows[0]) cfg = cfgRows[0];
+  cacheMetas = {};
+  (metasData||[]).forEach(m => cacheMetas[m.mes] = m);
+
+  const dados = await fetchAno(currentYear);
+  const investPorMes = {};
+  MESES.forEach(m => investPorMes[m.n] = 0);
+  dados.forEach(d => { if(d.tipo==='investimento'){ investPorMes[d.mes.split('-')[1]] += Number(d.valor)||0; } });
+  const totalInvestido = Object.values(investPorMes).reduce((a,b)=>a+b,0);
+
+  main.innerHTML = `
+    <div class="view-head">
+      <h1>Metas &amp; economia</h1>
+      <div class="desc">Planeje quanto pretende guardar por mês e acompanhe o quanto já foi investido.</div>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);">
+      <div class="kpi invest"><div class="label">Investido em ${currentYear}</div><div class="value">${fmt(totalInvestido)}</div></div>
+      <div class="kpi"><div class="label">Objetivo geral</div><div class="value">
+        <input id="objetivo-input" type="number" step="0.01" value="${cfg.objetivo_total||0}" style="border:none;background:transparent;width:100%;font:inherit;font-variant-numeric:tabular-nums;">
+      </div></div>
+      <div class="kpi"><div class="label">Progresso do objetivo</div><div class="value">${cfg.objetivo_total ? Math.min(100, Math.round(totalInvestido/cfg.objetivo_total*100)) : 0}%</div></div>
+    </div>
+    <div class="progress-wrap" style="margin-bottom:26px;">
+      <div class="progress-bar" style="width:${cfg.objetivo_total ? Math.min(100, totalInvestido/cfg.objetivo_total*100) : 0}%"></div>
+    </div>
+    <table class="metas">
+      <thead><tr><th>Mês</th><th>Valor previsto</th><th>Investido</th><th>Diferença</th></tr></thead>
+      <tbody>
+        ${MESES.map(m => {
+          const mesKey = `${currentYear}-${m.n}`;
+          const meta = cacheMetas[mesKey] || {valor_previsto:0};
+          const inv = investPorMes[m.n];
+          const dif = inv - (Number(meta.valor_previsto)||0);
+          return `<tr data-mes="${mesKey}">
+            <td>${m.label}</td>
+            <td><input class="previsto" type="number" step="0.01" value="${meta.valor_previsto||0}"></td>
+            <td>${fmt(inv)}</td>
+            <td style="color:${dif>=0?'var(--ganho)':'var(--fixa)'}">${fmt(dif)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById('objetivo-input').addEventListener('change', async (e) => {
+    const val = parseFloat(e.target.value) || 0;
+    try{
+      await SB.update('config', 'id', 1, {objetivo_total: val});
+      showToast('Objetivo atualizado');
+      renderMetas(main);
+    }catch(err){ showToast('Erro ao salvar objetivo'); }
+  });
+
+  main.querySelectorAll('tr[data-mes] input.previsto').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const mesKey = e.target.closest('tr').dataset.mes;
+      const val = parseFloat(e.target.value) || 0;
+      const existing = cacheMetas[mesKey];
+      try{
+        if(existing){
+          await SB.update('metas', 'id', existing.id, {valor_previsto: val});
+        }else{
+          await SB.insert('metas', {mes: mesKey, valor_previsto: val});
+        }
+        showToast('Meta salva');
+      }catch(err){ showToast('Erro ao salvar meta'); }
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>
