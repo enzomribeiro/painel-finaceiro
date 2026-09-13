@@ -426,7 +426,7 @@
     </div>
     <div class="sidebar-foot">
       <button id="btn-disconnect">Desconectar banco</button>
-      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v6</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v7</div>
     </div>
   </aside>
   <main id="main-content"></main>
@@ -753,6 +753,16 @@ async function renderOverview(main){
   });
 }
 
+function parseValorBR(v){
+  if(v === null || v === undefined) return NaN;
+  let s = String(v).trim();
+  if(s === '') return NaN;
+  if(s.includes(',')){
+    s = s.replace(/\./g,'').replace(',', '.');
+  }
+  return parseFloat(s);
+}
+
 async function inserirLancamento(novo){
   try{
     return await SB.insert('lancamentos', novo);
@@ -798,7 +808,7 @@ async function renderMes(main, mesNum){
   let editingId = null;
 
   function paint(){
-    const itens = cacheLancamentos[mesKey];
+    const itens = cacheLancamentos[mesKey] || [];
     const grupos = {
       ganho: itens.filter(i=>i.tipo==='ganho'),
       despesa_fixa: itens.filter(i=>i.tipo==='despesa_fixa'),
@@ -830,7 +840,7 @@ async function renderMes(main, mesNum){
             <input class="e-date" type="date" value="${i.dia||''}" required>
             <input class="e-desc" type="text" value="${escapeHtml(i.descricao)}" required>
             ${tipo!=='ganho' ? `<select class="e-cat"><option value="">Sem categoria</option>${opts}</select>` : ''}
-            <input class="e-val" type="number" step="0.01" value="${i.valor}" required>
+            <input class="e-val" type="text" inputmode="decimal" value="${String(i.valor).replace('.',',')}" required>
             <button type="submit" title="Salvar">✓</button>
             <button type="button" class="e-cancel" title="Cancelar">×</button>
           </form>
@@ -856,7 +866,7 @@ async function renderMes(main, mesNum){
             <input class="date" type="date" required>
             <input class="desc" type="text" placeholder="Descrição" required>
             ${tipo!=='ganho' ? `<select class="cat"><option value="">Categoria</option>${opts}</select>` : ''}
-            <input class="val" type="number" step="0.01" placeholder="0,00" required>
+            <input class="val" type="text" inputmode="decimal" placeholder="0,00" required>
             <button type="submit">+</button>
           </form>
         </div>`;
@@ -906,19 +916,24 @@ async function renderMes(main, mesNum){
         const descInput = form.querySelector('.desc');
         const catInput = form.querySelector('.cat');
         const valInput = form.querySelector('.val');
+        const valorNum = parseValorBR(valInput.value);
+        if(isNaN(valorNum)){
+          showToast('Valor inválido — use só números, ex: 10,50');
+          return;
+        }
         const novo = {
           tipo: form.dataset.tipo,
           mes: form.dataset.mes,
           dia: dateInput.value || null,
           descricao: descInput.value.trim(),
           categoria: catInput ? (catInput.value || null) : null,
-          valor: parseFloat(valInput.value)
+          valor: valorNum
         };
         try{
-          await inserirLancamento(novo);
-          delete cacheLancamentos[mesKey];
+          const inseridos = await inserirLancamento(novo);
+          if(!cacheLancamentos[mesKey]) cacheLancamentos[mesKey] = [];
+          cacheLancamentos[mesKey] = cacheLancamentos[mesKey].concat(inseridos || []);
           showToast('Lançamento salvo');
-          cacheLancamentos[mesKey] = await SB.select('lancamentos', {select:'*', mes:mesKey, order:'dia.asc'});
           paint();
         }catch(err){ showToast('Erro ao salvar: ' + (err.message||'')); }
       });
@@ -936,17 +951,24 @@ async function renderMes(main, mesNum){
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = form.dataset.editSave;
+        const valorNum = parseValorBR(form.querySelector('.e-val').value);
+        if(isNaN(valorNum)){
+          showToast('Valor inválido — use só números, ex: 10,50');
+          return;
+        }
         const patch = {
           dia: form.querySelector('.e-date').value || null,
           descricao: form.querySelector('.e-desc').value.trim(),
-          valor: parseFloat(form.querySelector('.e-val').value)
+          valor: valorNum
         };
         const catEl = form.querySelector('.e-cat');
         if(catEl) patch.categoria = catEl.value || null;
         try{
-          await atualizarLancamento(id, patch);
+          const atualizados = await atualizarLancamento(id, patch);
           editingId = null;
-          cacheLancamentos[mesKey] = await SB.select('lancamentos', {select:'*', mes:mesKey, order:'dia.asc'});
+          if(atualizados && atualizados[0] && cacheLancamentos[mesKey]){
+            cacheLancamentos[mesKey] = cacheLancamentos[mesKey].map(i => i.id === id ? atualizados[0] : i);
+          }
           showToast('Lançamento atualizado');
           paint();
         }catch(err){ showToast('Erro ao salvar edição: ' + (err.message||'')); }
@@ -958,7 +980,7 @@ async function renderMes(main, mesNum){
         const id = btn.dataset.del;
         try{
           await SB.remove('lancamentos', 'id', id);
-          cacheLancamentos[mesKey] = cacheLancamentos[mesKey].filter(i => i.id !== id);
+          cacheLancamentos[mesKey] = (cacheLancamentos[mesKey]||[]).filter(i => i.id !== id);
           showToast('Lançamento removido');
           paint();
         }catch(err){ showToast('Erro ao excluir'); }
