@@ -426,7 +426,7 @@
     </div>
     <div class="sidebar-foot">
       <button id="btn-disconnect">Desconectar banco</button>
-      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v7</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-muted-dark);">painel v8</div>
     </div>
   </aside>
   <main id="main-content"></main>
@@ -1036,7 +1036,111 @@ async function renderAcoes(main){
       </details>
     </div>
     <div id="acao-resultado"></div>
+
+    <div class="view-head" style="margin-top:36px;">
+      <h1 style="font-size:22px;">Minhas posses reais</h1>
+      <div class="desc">Digite aqui os valores que aparecem no seu app de investimento (ex: Tesouro Direto, Ações, Fundos Imobiliários, Poupança) pra comparar com o que o painel registrou.</div>
+    </div>
+    <div id="posses-lista"></div>
+
+    <div class="view-head" style="margin-top:36px;">
+      <h1 style="font-size:22px;">Aportes registrados por mês</h1>
+      <div class="desc">Quanto o painel registrou como investimento em cada mês. Use pra achar em qual mês pode ter algo lançado errado (duplicado, categoria trocada etc.).</div>
+    </div>
+    <div id="aportes-mes"></div>
   `;
+
+  await renderPosses();
+  await renderAportesPorMes();
+
+  async function renderPosses(){
+    const box = document.getElementById('posses-lista');
+    let posses = [];
+    try{ posses = await SB.select('posses', {select:'*', order:'categoria.asc'}); }
+    catch(e){ box.innerHTML = `<div style="color:var(--fixa);font-size:13px;">Não consegui carregar suas posses. Rode o SQL que cria a tabela "posses" no Supabase (veja a mensagem que te passei) e recarregue.</div>`; return; }
+
+    const total = posses.reduce((s,p)=>s+(Number(p.valor)||0),0);
+    const linhas = posses.length ? posses.map(p => `
+      <li data-id="${p.id}">
+        <div class="desc"><div>${escapeHtml(p.categoria)}${p.ativo ? ' · '+escapeHtml(p.ativo) : ''}</div></div>
+        <div class="val">${fmt(p.valor)}</div>
+        <button class="del" data-del-posse="${p.id}" title="Excluir">×</button>
+      </li>`).join('') : `<li class="empty">Nenhuma posse cadastrada ainda.</li>`;
+
+    box.innerHTML = `
+      <div class="col-card" style="max-width:520px;">
+        <div class="col-head"><h3>Posses cadastradas</h3><div class="tot">${fmt(total)}</div></div>
+        <ul class="col-list">${linhas}</ul>
+        <form class="add-row" id="form-posse">
+          <select class="p-cat" style="border:1px solid rgba(15,27,20,0.2);border-radius:2px;padding:6px 4px;font-size:11.5px;background:#fff;">
+            <option>Tesouro Direto</option>
+            <option>Ações</option>
+            <option>Fundos Imobiliários</option>
+            <option>Poupança</option>
+            <option>Reserva de emergência</option>
+            <option>Outros</option>
+          </select>
+          <input class="desc p-ativo" type="text" placeholder="Ativo (opcional, ex: PETR4)">
+          <input class="val p-valor" type="text" inputmode="decimal" placeholder="0,00" required>
+          <button type="submit">+</button>
+        </form>
+      </div>
+    `;
+
+    document.getElementById('form-posse').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const valorNum = parseValorBR(document.querySelector('.p-valor').value);
+      if(isNaN(valorNum)){ showToast('Valor inválido — use só números, ex: 100,00'); return; }
+      try{
+        await SB.insert('posses', {
+          categoria: document.querySelector('.p-cat').value,
+          ativo: document.querySelector('.p-ativo').value.trim() || null,
+          valor: valorNum
+        });
+        showToast('Posse salva');
+        renderPosses();
+      }catch(err){ showToast('Erro ao salvar posse'); }
+    });
+
+    box.querySelectorAll('[data-del-posse]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try{ await SB.remove('posses', 'id', btn.dataset.delPosse); showToast('Posse removida'); renderPosses(); }
+        catch(err){ showToast('Erro ao excluir'); }
+      });
+    });
+  }
+
+  async function renderAportesPorMes(){
+    const box = document.getElementById('aportes-mes');
+    let dados = [];
+    try{ dados = await SB.select('lancamentos', {select:'*', tipo:'eq.investimento'}); }
+    catch(e){ box.innerHTML = `<div style="color:var(--fixa);font-size:13px;">Não consegui carregar os investimentos.</div>`; return; }
+
+    const porMes = {};
+    dados.forEach(d => {
+      porMes[d.mes] = (porMes[d.mes]||0) + (Number(d.valor)||0);
+    });
+    const mesesOrdenados = Object.keys(porMes).sort();
+    const totalAportado = Object.values(porMes).reduce((a,b)=>a+b,0);
+
+    let posses = [];
+    try{ posses = await SB.select('posses', {select:'*'}); }catch(e){}
+    const totalPosses = posses.reduce((s,p)=>s+(Number(p.valor)||0),0);
+    const diferenca = totalPosses - totalAportado;
+
+    box.innerHTML = `
+      <div class="veredito-card" style="margin-bottom:16px;">
+        <div class="score">${fmt(totalPosses)} nas posses reais &nbsp;·&nbsp; ${fmt(totalAportado)} aportado no painel</div>
+        <p>Diferença: ${fmt(diferenca)} ${diferenca>=0 ? '(pode ser rendimento acumulado — ou uma posse que faltou cadastrar)' : '(pode ser prejuízo de mercado — ou um aporte lançado a mais/errado em algum mês)'}.</p>
+      </div>
+      <table class="metas">
+        <thead><tr><th>Mês</th><th>Investido registrado</th></tr></thead>
+        <tbody>
+          ${mesesOrdenados.map(m => `<tr><td>${m}</td><td>${fmt(porMes[m])}</td></tr>`).join('') || '<tr><td colspan="2" style="color:var(--text-muted);">Nenhum investimento registrado ainda.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  }
 
   document.getElementById('btn-save-token').addEventListener('click', async () => {
     const val = document.getElementById('brapi-token-input').value.trim();
